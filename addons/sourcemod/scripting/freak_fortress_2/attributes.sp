@@ -1,11 +1,6 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-static float JarateDamage[MAXTF2PLAYERS];
-static int JarateApplyer[MAXTF2PLAYERS];
-static float MarkDamage[MAXTF2PLAYERS];
-static int MarkApplyer[MAXTF2PLAYERS];
-
 void Attributes_PluginStart()
 {
 	HookUserMessage(GetUserMessageId("PlayerJarated"), Attributes_OnJarateBoss);
@@ -25,53 +20,8 @@ static Action Attributes_OnJarateBoss(UserMsg msg_id, BfRead bf, const int[] pla
 			
 			SetEntPropFloat(attacker, Prop_Send, "m_flRageMeter", rage);
 		}
-		
-		int weapon = GetPlayerWeaponSlot(attacker, TFWeaponSlot_Secondary);
-		if(weapon != -1)
-		{
-			char classname[36];
-			if(GetEntityClassname(weapon, classname, sizeof(classname)))
-			{
-				if(StrEqual(classname, "tf_weapon_jar"))
-				{
-					float duration = 1500.0;
-
-					CustomAttrib_OnJarateBoss(victim, attacker, weapon, duration);
-
-					if(duration > 0.0)
-					{
-						if(JarateDamage[victim] < 0.0)
-							JarateDamage[victim] = 0.0;
-						
-						JarateDamage[victim] += 1500.0;
-						JarateApplyer[victim] = attacker;
-					}
-				}
-				else if(StrEqual(classname, "tf_weapon_jar_milk"))
-				{
-					DataPack pack = new DataPack();
-					RequestFrame(ReapplyMilk, pack);
-					pack.WriteCell(GetClientUserId(victim));
-					pack.WriteCell(GetClientUserId(attacker));
-				}
-			}
-		}
 	}
 	return Plugin_Continue;
-}
-
-static void ReapplyMilk(DataPack pack)
-{
-	pack.Reset();
-	
-	int victim = GetClientOfUserId(pack.ReadCell());
-	if(victim)
-	{
-		TF2_RemoveCondition(victim, TFCond_Milked);
-		TF2_AddCondition(victim, TFCond_Milked, 5.0, GetClientOfUserId(pack.ReadCell()));
-	}
-	
-	delete pack;
 }
 
 bool Attributes_OnBackstabBoss(int attacker, int victim, float &damage, int weapon, bool backstab)
@@ -228,37 +178,6 @@ void Attributes_OnHitBoss(int attacker, int victim, int inflictor, float fdamage
 	
 	CustomAttrib_OnHitBossPost(attacker, Client(attacker).Damage, lastPlayerDamage);
 	
-	float value = Attrib_FindOnPlayer(attacker, "drop health pack on kill");
-	if(value > 0.0)
-	{
-		int amount = DamageGoal(RoundFloat(270.0 / value), Client(attacker).Damage, lastPlayerDamage);
-		if(amount)
-		{
-			float position[3];
-			GetClientAbsOrigin(victim, position);
-			position[2] += 20.0;
-			
-			float velocity[3];
-			velocity[2] = 75.0;
-			
-			int team = GetClientTeam(attacker);  
-			for(int i; i < amount; i++)
-			{
-				int entity = CreateEntityByName("item_healthkit_small");
-				if(IsValidEntity(entity))
-				{
-					DispatchKeyValue(entity, "OnPlayerTouch", "!self,Kill,,0,-1");
-					DispatchSpawn(entity);
-					SetEntProp(entity, Prop_Send, "m_iTeamNum", team);
-					TeleportEntity(entity, position);
-					velocity[0] = GetRandomFloat(-75.0, 75.0);
-					velocity[1] = GetRandomFloat(-75.0, 75.0);
-					SDKCall_DropSingleInstance(entity, velocity, attacker, 0.1);
-				}
-			}
-		}
-	}
-	
 	if(Attrib_FindOnPlayer(attacker, "rage on kill"))
 	{
 		float rage = 33.34;
@@ -274,6 +193,7 @@ void Attributes_OnHitBoss(int attacker, int victim, int inflictor, float fdamage
 
 	int i;
 	int entity = -1;
+	float value = 0.0;
 	while(TF2_GetItem(attacker, entity, i))
 	{
 		if(Attrib_Get(entity, "boost on damage", value) && value > 0.0)
@@ -383,44 +303,6 @@ void Attributes_OnHitBoss(int attacker, int victim, int inflictor, float fdamage
 			SetEntPropFloat(attacker, Prop_Send, "m_flCloakMeter", cloak);
 		}
 		
-		if(Attrib_FindOnWeapon(attacker, weapon, "jarate duration"))
-		{
-			if(JarateDamage[victim] < 0)
-				JarateDamage[victim] = 0.0;
-			
-			JarateApplyer[victim] = attacker;
-			JarateDamage[victim] += fdamage;
-		}
-		else if(Attrib_FindOnWeapon(attacker, weapon, "mark for death"))
-		{
-			MarkApplyer[victim] = attacker;
-			MarkDamage[victim] = 500.0;
-		}
-		else if(TF2_IsPlayerInCondition(victim, TFCond_Jarated))
-		{
-			JarateDamage[victim] -= fdamage;
-			if(JarateApplyer[victim])
-			{
-				Client(JarateApplyer[victim]).Assist += RoundFloat(fdamage * 0.35);
-				Client(JarateApplyer[victim]).RefreshAt = 0.0;
-			}
-			
-			if(JarateDamage[victim] <= 0.0)
-				TF2_RemoveCondition(victim, TFCond_Jarated);
-		}
-		else if(TF2_IsPlayerInCondition(victim, TFCond_MarkedForDeath))
-		{
-			MarkDamage[victim] -= fdamage;
-			if(MarkApplyer[victim])
-			{
-				Client(MarkApplyer[victim]).Assist += RoundFloat(fdamage * 0.35);
-				Client(MarkApplyer[victim]).RefreshAt = 0.0;
-			}
-			
-			if(MarkDamage[victim] <= 0.0)
-				TF2_RemoveCondition(victim, TFCond_MarkedForDeath);
-		}
-		
 		value = Attrib_FindOnWeapon(attacker, weapon, "heal on kill");
 		if(value)
 		{
@@ -494,9 +376,6 @@ void Attributes_OnHitBoss(int attacker, int victim, int inflictor, float fdamage
 			SetEntProp(weapon, Prop_Send, "m_bIsBloody", true);
 			SetEntProp(attacker, Prop_Send, "m_iKillCountSinceLastDeploy", GetEntProp(attacker, Prop_Send, "m_iKillCountSinceLastDeploy")+1);
 		}
-		
-		if(Attrib_FindOnWeapon(attacker, weapon, "kill forces attacker to laugh"))
-			TF2_StunPlayer(attacker, 2.0, 1.0, TF_STUNFLAGS_NORMALBONK);
 		
 		value = Attrib_FindOnWeapon(attacker, weapon, "minicritboost on kill");
 		if(value)

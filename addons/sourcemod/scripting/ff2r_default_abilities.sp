@@ -2976,18 +2976,6 @@ float GetPlayerStunMulti(int client)
 	// 300 HP = x0.85
 	multi = 1.15 - (multi * 0.001);
 	
-	// Ranged damage attributes
-	multi *= Attrib_FindOnPlayer(client, "dmg taken from fire reduced", true) *
-			 Attrib_FindOnPlayer(client, "dmg taken from fire increased", true) *
-			 Attrib_FindOnPlayer(client, "dmg taken from blast reduced", true) *
-			 Attrib_FindOnPlayer(client, "dmg taken from blast increased", true) *
-			 Attrib_FindOnPlayer(client, "dmg taken from bullets reduced", true) *
-			 Attrib_FindOnPlayer(client, "dmg taken from bullets increased", true) *
-			 Attrib_FindOnPlayer(client, "dmg taken increased", true) *
-			 Attrib_FindOnPlayer(client, "SET BONUS: dmg taken from fire reduced set bonus", true) *
-			 Attrib_FindOnPlayer(client, "SET BONUS: dmg taken from bullets increased", true) *
-			 Attrib_FindOnPlayer(client, "CARD: dmg taken from bullets reduced", true);
-	
 	// Mark-for-Death = x1.35
 	if(TF2_IsPlayerInCondition(client, TFCond_MarkedForDeath) ||
 	   TF2_IsPlayerInCondition(client, TFCond_MarkedForDeathSilent) ||

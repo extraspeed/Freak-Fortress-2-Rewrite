@@ -780,16 +780,6 @@ void CustomAttrib_OnBackstabBoss(int victim, float &damage, int weapon, float &t
 	}
 }
 
-void CustomAttrib_OnJarateBoss(int victim, int attacker, int weapon, float &jarate)
-{
-	float value;
-	if(CustomAttrib_Get(weapon, "jarate is rage loss", value))
-	{
-		ApplyRage(victim, attacker, value);
-		jarate = 0.0;
-	}
-}
-
 void CustomAttrib_OnInventoryApplication(int userid)
 {
 	RequestFrame(InventoryApplicationFrame, userid);
