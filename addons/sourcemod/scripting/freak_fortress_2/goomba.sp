@@ -59,7 +59,7 @@ public Action OnStomp(int attacker, int victim, float &damageMultiplier, float &
 	if(damageMultiplier > 0.3 && victim > 0 && victim <= MaxClients && Client(victim).IsBoss)
 	{
 		damageMultiplier = 0.0;
-		damageBonus = 585.0;
+		damageBonus = 500.0;
 		JumpPower *= 1.5;
 		return Plugin_Changed;
 	}
